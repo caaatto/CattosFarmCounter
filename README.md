@@ -1,203 +1,241 @@
 # FarmCounter
 
-Ein WoW Classic Era Addon zum Tracken von gefarmten Items mit Echtzeit-Statistiken.
+A WoW Classic Era addon for tracking farmed items with real-time statistics.
 
 ## Features
 
-- **Tracking-Fenster**: Zeigt alle getrackten Items mit Live-Statistiken
-  - Aktueller Inventar-Bestand
-  - Gefarmt diese Session (+X)
-  - Items pro Stunde
-- **Minimap-Icon**: Praktisches Icon an der Minimap zum schnellen Zugriff
-  - Left-Click: Tracking-Fenster ein-/ausblenden
-  - Right-Click: Einstellungen öffnen
-- **Item ID Anzeige**: Zeigt Item IDs in allen Tooltips an
-- **Einfaches Hinzufügen**: Shift+Click auf Items in deinen Taschen
-- **Session-Tracking**: Automatischer Start beim Login, manueller Reset möglich
-- **Einstellungs-Panel**: Vollständiges Interface Options Panel
+- **Tracking Window**: Shows all tracked items with live statistics
+  - Current inventory count
+  - Farmed this session (+X)
+  - Items per hour
+- **Focus Bar**: WeakAura-style progress bar for focused items
+  - Set farming goals
+  - Visual progress indicator
+  - Items/hour tracking
+- **Minimap Icon**: Quick access icon on minimap
+  - Left-Click: Toggle tracking window
+  - Right-Click: Open settings
+- **Item ID Display**: Shows Item IDs in all tooltips
+- **Easy Adding**: Shift+Click items in your bags or use manual ID input
+- **Session Tracking**: Automatic start on login, manual reset available
+- **Settings Panel**: Full Interface Options integration
 
 ## Installation
 
-1. Entpacke den Ordner in: `World of Warcraft\_classic_era_\Interface\AddOns\`
-2. Stelle sicher dass der Ordner `FarmCounter` heißt
-3. **(Optional)** Installiere LibDataBroker-1.1 und LibDBIcon-1.0 für Minimap-Icon Support
-   - Viele Addons enthalten diese Libraries bereits
-   - Funktioniert auch ohne diese Libraries, nur ohne Minimap-Icon
-4. Starte WoW Classic Era
-5. Aktiviere das Addon im Charakter-Auswahlbildschirm
+1. Extract the folder to: `World of Warcraft\_classic_era_\Interface\AddOns\`
+2. Make sure the folder is named `FarmCounter`
+3. **(Optional)** Install LibDataBroker-1.1 and LibDBIcon-1.0 for Minimap icon support
+   - Many addons already include these libraries
+   - Works without these libraries, just without minimap icon
+4. Start WoW Classic Era
+5. Enable the addon in the character selection screen
 
-## Benutzung
+## Usage
 
-### Items Tracken
+### Tracking Items
 
-**Methode 1: Item ID eingeben** (Empfohlen)
+**Method 1: Enter Item ID** (Recommended)
 ```
 /fc add <itemID>
 ```
-Beispiel: `/fc add 13468` (Black Lotus)
+Example: `/fc add 13468` (Black Lotus)
 
-**Methode 2: Shift+Click**
-- Öffne deine Taschen
-- Halte Shift gedrückt und klicke auf ein Item
-- Das Item wird zum Tracking hinzugefügt
+**Method 2: Shift+Click**
+- Open your bags
+- Hold Shift and click on an item
+- The item will be added to tracking
 
-**Methode 3: Über Einstellungen**
-- Das Einstellungs-Panel zeigt alle aktuell getrackten Items
+**Method 3: Via Settings**
+- The settings panel shows all currently tracked items
 
-**Item entfernen:**
+**Remove item:**
 ```
 /fc remove <itemID>
 ```
-Beispiel: `/fc remove 13468`
+Example: `/fc remove 13468`
 
-### Befehle
+### Commands
 
 ```
-/fc help             - Zeigt alle Befehle
-/fc add <itemID>     - Item zum Tracking hinzufügen
-/fc remove <itemID>  - Item aus Tracking entfernen
-/fc show             - Zeigt das Tracking-Fenster
-/fc hide             - Versteckt das Tracking-Fenster
-/fc reset            - Setzt die Session-Statistiken zurück
-/fc config           - Öffnet die Einstellungen
+/fc help             - Show all commands
+/fc add <itemID>     - Add item to tracking
+/fc remove <itemID>  - Remove item from tracking
+/fc show             - Show tracking window
+/fc hide             - Hide tracking window
+/fc reset            - Reset session statistics
+/fc config           - Open settings
 ```
 
-Aliase: `/farmcounter` = `/fc`
+Aliases: `/farmcounter` = `/fc`
 
-### Minimap-Icon
+### Focus Bar
 
-Ein praktisches Icon an der Minimap (wenn LibDBIcon installiert ist):
+The Focus Bar allows you to focus on a specific item and track progress towards a goal:
 
-- **Left-Click**: Tracking-Fenster ein-/ausblenden
-- **Right-Click**: Einstellungen öffnen
-- **Tooltip**: Zeigt Version und Hilfe
+**Focusing an item:**
+1. Open FarmCounter (`/fc show`)
+2. Click the icon button next to an item
+3. Set your goal (e.g. 100)
+4. Progress bar appears
 
-Das Icon kann in den Einstellungen versteckt werden.
+**Change goal:**
+- **Right-Click** on the Focus Bar
+- Enter new goal
 
-### Tracking-Fenster
+**Unfocus item:**
+- Click **X** on the Focus Bar
+- Or click the icon button again on the item
 
-Das Tracking-Fenster zeigt für jedes Item:
-- **Icon und Name** in Qualitätsfarbe
-- **Inventar**: Aktuelle Anzahl im Inventar (inkl. Bank)
-- **Session**: Gefarmt seit Session-Start (+/- Anzahl) und Items/Stunde
+**Move the bar:**
+- Simply **Drag & Drop**
+- In Config: Enable "Lock Focus Bar Position"
 
-**Fenster-Funktionen:**
-- **Verschieben**: Ziehe die Titelleiste
-- **Minimieren**: Klick auf [-] Button
-- **Schließen**: Klick auf [X] Button
-- **Item entfernen**: Klick auf [-] Button beim Item
-- **Session Reset**: Klick auf "Reset Session" Button
+### Minimap Icon
 
-### Einstellungen
+A convenient icon on the minimap (if LibDBIcon is installed):
 
-Öffne mit `/fc config` oder über Interface Options → AddOns → FarmCounter:
+- **Left-Click**: Toggle tracking window
+- **Right-Click**: Open settings
+- **Tooltip**: Shows version and help
 
-- **Show Tracking Window**: Tracking-Fenster ein-/ausblenden
-- **Lock Window Position**: Fenster-Position fixieren
-- **Show Minimap Icon**: Minimap-Icon ein-/ausblenden
-- **Tracked Items**: Liste aller getrackten Items
-  - Remove: Item aus Tracking entfernen
-- **Reset Session**: Session-Statistiken zurücksetzen
-- **Remove All Items**: Alle Items aus Tracking entfernen
+The icon can be hidden in settings.
 
-## Session-Tracking
+### Tracking Window
 
-### Was ist eine Session?
+The tracking window shows for each item:
+- **Icon and Name** in quality color
+- **Inventory**: Current count in inventory (including bank)
+- **Session**: Farmed since session start (+/- amount) and items/hour
 
-Eine Session startet:
-- Beim Login/Reload (`/reload`)
-- Bei manuellem Reset (`/fc reset` oder Button)
+**Window Functions:**
+- **Move**: Drag the title bar
+- **Close**: Click [X] button
+- **Remove item**: Click [-] button next to item
+- **Focus item**: Click icon button next to item
+- **Add item**: Click "Add Item" button
+- **Session Reset**: Click "Reset Session" button
 
-Die Session speichert:
-- **Start-Anzahl**: Wie viele Items du beim Session-Start hattest
-- **Start-Zeit**: Wann die Session gestartet wurde
+### Settings
 
-### Berechnungen
+Open with `/fc config` or via Interface Options → AddOns → FarmCounter:
 
-- **Gefarmt**: `Aktuelle Anzahl - Start-Anzahl`
-- **Items/Stunde**: `Gefarmt / Verstrichene Zeit in Stunden`
+- **Show Tracking Window**: Toggle tracking window
+- **Lock Window Position**: Lock window position
+- **Show Minimap Icon**: Toggle minimap icon
+- **Show Focus Bar**: Toggle focus bar visibility
+- **Lock Focus Bar Position**: Lock focus bar position
+- **Add Item by ID**: Input field to add items
+- **Tracked Items**: List of all tracked items
+  - Remove: Remove item from tracking
+- **Reset Session**: Reset session statistics
+- **Remove All Items**: Remove all items from tracking
 
-**Beispiel:**
+## Session Tracking
+
+### What is a Session?
+
+A session starts:
+- On login/reload (`/reload`)
+- On manual reset (`/fc reset` or button)
+
+The session saves:
+- **Start Count**: How many items you had at session start
+- **Start Time**: When the session started
+
+### Calculations
+
+- **Farmed**: `Current Count - Start Count`
+- **Items/Hour**: `Farmed / Elapsed Time in Hours`
+
+**Example:**
 ```
-Session Start: 10:00 Uhr, 20 Goldener Sansam
-Aktuelle Zeit: 12:30 Uhr, 50 Goldener Sansam
+Session Start: 10:00 AM, 20 Golden Sansam
+Current Time: 12:30 PM, 50 Golden Sansam
 
-Gefarmt: 50 - 20 = +30
-Zeit: 2.5 Stunden
+Farmed: 50 - 20 = +30
+Time: 2.5 hours
 Items/h: 30 / 2.5 = 12.0/h
 ```
 
 ## Item IDs
 
-Das Addon zeigt automatisch Item IDs in allen Item-Tooltips an:
-- Fahre über ein Item
-- Am Ende des Tooltips siehst du: "Item ID: 12345"
-- Praktisch zum Nachschlagen oder für andere Addons
+The addon automatically shows Item IDs in all item tooltips:
+- Hover over an item
+- At the end of the tooltip you'll see: "Item ID: 12345"
+- Useful for lookup or for other addons
 
-## Dateien
+## Files
 
 ```
 FarmCounter/
-├── FarmCounter.toc    # Addon Metadaten
-├── Core.lua           # Hauptlogik, Events, Tracking-System
-├── UI.lua             # Tracking-Fenster GUI
-├── Config.lua         # Einstellungs-Panel
-├── Tooltip.lua        # Item ID Tooltip-Hook
-├── Plan.md            # Entwicklungsplan
-└── README.md          # Diese Datei
+├── FarmCounter.toc    # Addon metadata
+├── Core.lua           # Main logic, events, tracking system
+├── UI.lua             # Tracking window GUI
+├── FocusBar.lua       # Focus bar GUI
+├── Config.lua         # Settings panel
+├── Tooltip.lua        # Item ID tooltip hook
+├── Plan.md            # Development plan
+└── README.md          # This file
 ```
 
-## Technische Details
+## Technical Details
 
 ### SavedVariables
 
-Das Addon speichert Daten in `FarmCounterDB`:
+The addon saves data in `FarmCounterDB`:
 
 ```lua
 FarmCounterDB = {
     trackedItems = {
         [itemID] = {
-            startCount = number,    -- Anzahl beim Session-Start
-            startTime = number,     -- GetTime() beim Start
-            enabled = boolean       -- Tracking aktiv
+            startCount = number,    -- Count at session start
+            startTime = number,     -- GetTime() at start
+            enabled = boolean       -- Tracking active
         }
     },
     settings = {
-        windowPosition = {x, y},    -- Fenster-Position
-        windowVisible = boolean,    -- Fenster sichtbar
-        windowLocked = boolean,     -- Position fixiert
-        frameScale = number         -- Fenster-Skalierung
+        windowPosition = {x, y},    -- Window position
+        windowVisible = boolean,    -- Window visible
+        windowLocked = boolean,     -- Position locked
+        frameScale = number         -- Window scale
     },
     minimap = {
-        hide = boolean              -- Minimap-Icon versteckt
-        -- (Position wird automatisch von LibDBIcon gespeichert)
+        hide = boolean              -- Minimap icon hidden
+        -- (Position automatically saved by LibDBIcon)
+    },
+    focus = {
+        itemID = nil,               -- Currently focused item
+        goal = 100,                 -- Goal for focused item
+        barPosition = {x, y},       -- Focus bar position
+        barVisible = true,          -- Focus bar visible
+        barLocked = false          -- Focus bar locked
     }
 }
 ```
 
 ### Events
 
-- `ADDON_LOADED` - Addon-Initialization
-- `PLAYER_LOGIN` - Session-Start, UI-Erstellung
-- `BAG_UPDATE` - UI-Update bei Inventar-Änderungen
+- `ADDON_LOADED` - Addon initialization
+- `PLAYER_LOGIN` - Session start, UI creation
+- `BAG_UPDATE` - UI update on inventory changes
 
-### APIs (Classic Era kompatibel)
+### APIs (Classic Era compatible)
 
-- `GetItemCount(itemID, true)` - Item-Anzahl (inkl. Bank)
-- `GetItemInfo(itemID)` - Item-Informationen
-- `GetTime()` - Aktuelle Spielzeit für Berechnungen
-- `GetContainerItemLink(bag, slot)` - Item-Link aus Tasche
+- `GetItemCount(itemID, true)` - Item count (including bank)
+- `GetItemInfo(itemID)` - Item information
+- `GetTime()` - Current game time for calculations
+- `GetContainerItemLink(bag, slot)` - Item link from bag
 
-## Tipps
+## Tips
 
-1. **Item IDs finden**: Fahre über ein Item - das Addon zeigt die Item ID im Tooltip
-2. **Mehrere Items tracken**: Du kannst beliebig viele Items gleichzeitig tracken
-3. **Session Reset**: Nutze Reset wenn du eine neue Farm-Session startest
-4. **Bank-Items**: Das Addon zählt auch Items in der Bank mit
-5. **Negative Werte**: Wenn du Items verkaufst/benutzt, wird die Differenz negativ angezeigt
-6. **Fenster-Position**: Das Addon merkt sich die Fenster-Position automatisch
+1. **Find Item IDs**: Hover over an item - the addon shows the Item ID in the tooltip
+2. **Track Multiple Items**: You can track as many items as you want simultaneously
+3. **Session Reset**: Use reset when starting a new farm session
+4. **Bank Items**: The addon counts items in the bank too
+5. **Negative Values**: If you sell/use items, the difference will show as negative
+6. **Window Position**: The addon automatically remembers the window position
 
-### Beliebte Farm-Items (Classic Era)
+### Popular Farm Items (Classic Era)
 
 ```bash
 /fc add 13468  # Black Lotus
@@ -220,17 +258,17 @@ FarmCounterDB = {
 ## Support
 
 - Version: 0.1.0
-- Autor: Catto
-- Kompatibel mit: WoW Classic Era (1.14.x)
+- Author: Catto
+- Compatible with: WoW Classic Era (1.14.x)
 - Interface Version: 11404
-- Optional: LibDataBroker-1.1, LibDBIcon-1.0 (für Minimap-Icon)
+- Optional: LibDataBroker-1.1, LibDBIcon-1.0 (for Minimap icon)
 
-## Bekannte Einschränkungen
+## Known Limitations
 
-- Items müssen im Cache sein (einmal angesehen worden sein)
-- Bank-Items werden nur gezählt wenn Bank offen war
-- Items in der Post werden nicht gezählt
+- Items must be in cache (viewed at least once)
+- Bank items only counted when bank is open
+- Mail items are not counted
 
 ## Credits
 
-Entwickelt für WoW Classic Era mit Liebe zum Detail.
+Developed for WoW Classic Era with attention to detail.
