@@ -1,0 +1,13 @@
+## Interface: 11404
+## Title: FarmCounter
+## Notes: Track farmed items with session statistics and items per hour
+## Author: Catto
+## Version: 0.1.0
+## SavedVariables: FarmCounterDB
+## OptionalDeps: LibStub, LibDataBroker-1.1, LibDBIcon-1.0
+
+Core.lua
+Tooltip.lua
+FocusBar.lua
+UI.lua
+Config.lua
