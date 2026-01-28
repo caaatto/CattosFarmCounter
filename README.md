@@ -5,13 +5,16 @@ A WoW Classic Era addon for tracking farmed items with real-time statistics.
 ## Features
 
 - **Tracking Window**: Shows all tracked items with live statistics
-  - Current inventory count
+  - **Separate Bags/Bank display**: See exactly where your items are
   - Farmed this session (+X)
   - Items per hour
 - **Focus Bar**: WeakAura-style progress bar for focused items
+  - **Two modes**: Session Goal (track farmed) or Free Farm (track total)
   - Set farming goals
   - Visual progress indicator
   - Items/hour tracking
+- **Bank Cache System**: Remembers bank item counts even when bank is closed
+- **Adjustable Start Values**: Edit start count for any tracked item in settings
 - **Minimap Icon**: Quick access icon on minimap
   - Left-Click: Toggle tracking window
   - Right-Click: Open settings
@@ -70,25 +73,58 @@ Aliases: `/farmcounter` = `/fc`
 
 ### Focus Bar
 
-The Focus Bar allows you to focus on a specific item and track progress towards a goal:
+The Focus Bar allows you to focus on a specific item and track progress towards a goal.
+
+#### Two Focus Modes
+
+**Session Goal Mode:**
+- Tracks how many items you've **farmed this session**
+- Example: Goal = 100, you farm +50 → Shows "50 / 100"
+- Stats display: `+50 this session (25/h)`
+- Perfect for daily farming goals
+
+**Free Farm Mode:**
+- Tracks **total items** (Bags + Bank combined)
+- Example: You have 150 items, Goal = 200 → Shows "150 / 200"
+- Stats display: `Bags: 130 | Bank: 20 (25/h)`
+- Perfect for long-term collection goals
+
+#### Using the Focus Bar
 
 **Focusing an item:**
 1. Open FarmCounter (`/fc show`)
-2. Click the icon button next to an item
-3. Set your goal (e.g. 100)
-4. Progress bar appears
+2. Click the star icon button next to an item
+3. Choose mode: **"Session Goal"** or **"Free Farm"**
+4. Enter your goal (e.g. 100)
+5. Progress bar appears
 
 **Change goal:**
 - **Right-Click** on the Focus Bar
-- Enter new goal
+- Enter new goal (keeps current mode)
 
 **Unfocus item:**
 - Click **X** on the Focus Bar
-- Or click the icon button again on the item
+- Or click the star icon button again on the item
 
 **Move the bar:**
-- Simply **Drag & Drop**
-- In Config: Enable "Lock Focus Bar Position"
+- Simply **Drag & Drop** the bar
+- In Config: Enable "Lock Focus Bar Position" to prevent accidental moves
+
+### Bank Cache System
+
+The addon automatically caches bank item counts:
+
+**How it works:**
+1. Open the bank → Addon scans and saves all tracked items in bank
+2. Close the bank → Counts remain cached
+3. Display shows cached bank count even when bank is closed
+
+**Benefits:**
+- See your bank items without visiting the bank
+- Track total wealth (bags + bank) anytime
+- No need to keep bank open for accurate counts
+
+**Note:** Bank counts update only when you open the bank. If you use another character to modify the bank, counts may be outdated until you open the bank again on this character.
 
 ### Minimap Icon
 
@@ -104,14 +140,17 @@ The icon can be hidden in settings.
 
 The tracking window shows for each item:
 - **Icon and Name** in quality color
-- **Inventory**: Current count in inventory (including bank)
+- **Bags / Bank**: Separate display for bags and bank items
+  - Example: `Bags: 47 | Bank: 12`
+  - Bank count only shown when > 0
+  - Bank counts cached and persist even when bank is closed
 - **Session**: Farmed since session start (+/- amount) and items/hour
 
 **Window Functions:**
 - **Move**: Drag the title bar
 - **Close**: Click [X] button
 - **Remove item**: Click [-] button next to item
-- **Focus item**: Click icon button next to item
+- **Focus item**: Click star icon button next to item (choose Session Goal or Free Farm)
 - **Add item**: Click "Add Item" button
 - **Session Reset**: Click "Reset Session" button
 
@@ -126,9 +165,30 @@ Open with `/fc config` or via Interface Options → AddOns → FarmCounter:
 - **Lock Focus Bar Position**: Lock focus bar position
 - **Add Item by ID**: Input field to add items
 - **Tracked Items**: List of all tracked items
-  - Remove: Remove item from tracking
+  - Shows current count and start value for each item
+  - **Edit Start**: Adjust the start count for session tracking
+    - Set custom start value
+    - Or reset to current count (sets farmed to 0)
+  - **Remove**: Remove item from tracking
 - **Reset Session**: Reset session statistics
 - **Remove All Items**: Remove all items from tracking
+
+#### Editing Start Values
+
+You can adjust the start count for any tracked item:
+
+1. Open settings (`/fc config`)
+2. Find the item in "Tracked Items" list
+3. Click **"Edit Start"** button
+4. Choose:
+   - **"Set"**: Enter a custom start value
+   - **"Reset to Current"**: Set start = current count (farmed resets to 0)
+
+**Example Use Case:**
+- You have 50 Black Lotus in your bags
+- You set start count to 0
+- Display shows: `Session: +50` instead of `Session: +0`
+- Useful for tracking old items without resetting the session
 
 ## Session Tracking
 
@@ -188,7 +248,7 @@ The addon saves data in `FarmCounterDB`:
 FarmCounterDB = {
     trackedItems = {
         [itemID] = {
-            startCount = number,    -- Count at session start
+            startCount = number,    -- Count at session start (editable)
             startTime = number,     -- GetTime() at start
             enabled = boolean       -- Tracking active
         }
@@ -206,9 +266,13 @@ FarmCounterDB = {
     focus = {
         itemID = nil,               -- Currently focused item
         goal = 100,                 -- Goal for focused item
+        mode = "session",           -- "session" or "total" (Free Farm)
         barPosition = {x, y},       -- Focus bar position
         barVisible = true,          -- Focus bar visible
-        barLocked = false          -- Focus bar locked
+        barLocked = false           -- Focus bar locked
+    },
+    bankCache = {
+        [itemID] = number           -- Cached bank count per item
     }
 }
 ```
@@ -218,6 +282,9 @@ FarmCounterDB = {
 - `ADDON_LOADED` - Addon initialization
 - `PLAYER_LOGIN` - Session start, UI creation
 - `BAG_UPDATE` - UI update on inventory changes
+- `BANKFRAME_OPENED` - Update bank cache when bank opens
+- `PLAYERBANKSLOTS_CHANGED` - Update bank cache when bank contents change
+- `BANKFRAME_CLOSED` - Refresh UI when bank closes
 
 ### APIs (Classic Era compatible)
 
@@ -257,7 +324,7 @@ FarmCounterDB = {
 
 ## Support
 
-- Version: 0.1.0
+- Version: 0.3.0
 - Author: Catto
 - Compatible with: WoW Classic Era (1.14.x)
 - Interface Version: 11404
@@ -266,8 +333,9 @@ FarmCounterDB = {
 ## Known Limitations
 
 - Items must be in cache (viewed at least once)
-- Bank items only counted when bank is open
+- Bank item counts are cached when you open the bank, and persist until next bank visit
 - Mail items are not counted
+- Bank counts may be outdated if you use another character to modify the bank
 
 ## Credits
 

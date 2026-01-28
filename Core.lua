@@ -1,6 +1,6 @@
 -- FarmCounter Core
 FarmCounter = {}
-FarmCounter.version = "0.1.0"
+FarmCounter.version = "0.3.0"
 
 -- Local references for performance
 local _G = _G
@@ -311,6 +311,45 @@ function FarmCounter:SetFocusGoal(goal)
 
     -- Update focus bar
     if FarmCounterFocusBar and FarmCounterFocusBar.Update then
+        FarmCounterFocusBar:Update()
+    end
+
+    return true
+end
+
+-- Set start count for an item (adjusts the baseline for session tracking)
+function FarmCounter:SetItemStartCount(itemID, startCount)
+    if not itemID then return false end
+
+    local data = self.db.trackedItems[itemID]
+    if not data then
+        print("|cffff0000FarmCounter:|r Item is not being tracked.")
+        return false
+    end
+
+    startCount = tonumber(startCount)
+    if not startCount then
+        print("|cffff0000FarmCounter:|r Invalid start count. Please enter a number.")
+        return false
+    end
+
+    -- Get current total count
+    local currentTotal = GetItemCount(itemID, true)
+
+    -- Update start count
+    data.startCount = startCount
+
+    local itemName, itemLink = GetItemInfo(itemID)
+    print("|cff00ff00FarmCounter:|r Start count for " .. (itemLink or "item") .. " set to " .. startCount)
+    print("|cffaaaaaa  Current: " .. currentTotal .. " | Farmed: " .. (currentTotal - startCount) .. "|r")
+
+    -- Update UI
+    if FarmCounterUI and FarmCounterUI.UpdateDisplay then
+        FarmCounterUI:UpdateDisplay()
+    end
+
+    -- Update focus bar if this item is focused
+    if FarmCounterFocusBar and FarmCounterFocusBar.Update and self.db.focus.itemID == itemID then
         FarmCounterFocusBar:Update()
     end
 

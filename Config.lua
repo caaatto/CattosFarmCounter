@@ -342,10 +342,17 @@ function FarmCounterConfig:CreateItemRow(parent)
     removeBtn:SetPoint("RIGHT", row, "RIGHT", -5, 0)
     removeBtn:SetText("Remove")
 
+    -- Edit button
+    local editBtn = CreateFrame("Button", nil, row, "UIPanelButtonTemplate")
+    editBtn:SetSize(70, 22)
+    editBtn:SetPoint("RIGHT", removeBtn, "LEFT", -5, 0)
+    editBtn:SetText("Edit Start")
+
     row.icon = icon
     row.name = name
     row.stats = stats
     row.removeBtn = removeBtn
+    row.editBtn = editBtn
 
     return row
 end
@@ -369,8 +376,17 @@ function FarmCounterConfig:UpdateItemRow(row, itemID)
     -- Set stats
     local itemStats = FarmCounter:GetItemStats(itemID)
     if itemStats then
-        row.stats:SetText("|cffaaaaaa(Current: " .. itemStats.currentCount .. ")|r")
+        local data = FarmCounter.db.trackedItems[itemID]
+        local startCount = data and data.startCount or 0
+        row.stats:SetText("|cffaaaaaa(Current: " .. itemStats.currentCount .. " | Start: " .. startCount .. ")|r")
     end
+
+    -- Edit button
+    row.editBtn:SetScript("OnClick", function()
+        -- Store itemID for the dialog
+        FarmCounter.pendingEditItemID = itemID
+        StaticPopup_Show("FARMCOUNTER_EDIT_START_COUNT")
+    end)
 
     -- Remove button
     row.removeBtn:SetScript("OnClick", function()
@@ -427,6 +443,91 @@ StaticPopupDialogs["FARMCOUNTER_REMOVE_ALL"] = {
         if FarmCounterConfig and FarmCounterConfig.UpdateItemsList then
             FarmCounterConfig:UpdateItemsList()
         end
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- Static popup for editing item start count
+StaticPopupDialogs["FARMCOUNTER_EDIT_START_COUNT"] = {
+    text = "Set Start Count:\n\nThis adjusts the baseline for session tracking.\nExample: If you have 50 items and set start to 0,\nit will show 'Farmed: +50'",
+    button1 = "Set",
+    button2 = "Reset to Current",
+    button3 = "Cancel",
+    hasEditBox = true,
+    OnShow = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            local itemID = FarmCounter.pendingEditItemID
+            if itemID then
+                local data = FarmCounter.db.trackedItems[itemID]
+                local itemName = GetItemInfo(itemID)
+                if data and itemName then
+                    self.text:SetText("Set Start Count for " .. itemName .. ":\n\nThis adjusts the baseline for session tracking.\nExample: If you have 50 items and set start to 0,\nit will show 'Farmed: +50'")
+                    editBox:SetText(tostring(data.startCount or 0))
+                    editBox:SetFocus()
+                    editBox:HighlightText()
+                end
+            end
+        end
+    end,
+    OnAccept = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            local startCount = tonumber(editBox:GetText())
+            if startCount then
+                local itemID = FarmCounter.pendingEditItemID
+                if itemID then
+                    FarmCounter:SetItemStartCount(itemID, startCount)
+                    FarmCounter.pendingEditItemID = nil
+
+                    -- Refresh config list
+                    if FarmCounterConfig and FarmCounterConfig.UpdateItemsList then
+                        FarmCounterConfig:UpdateItemsList()
+                    end
+                end
+            else
+                print("|cffff0000FarmCounter:|r Invalid start count. Please enter a number.")
+            end
+        end
+    end,
+    OnCancel = function(self)
+        -- Button 2: Reset to current count
+        local itemID = FarmCounter.pendingEditItemID
+        if itemID then
+            local currentCount = GetItemCount(itemID, true)
+            FarmCounter:SetItemStartCount(itemID, currentCount)
+            FarmCounter.pendingEditItemID = nil
+
+            -- Refresh config list
+            if FarmCounterConfig and FarmCounterConfig.UpdateItemsList then
+                FarmCounterConfig:UpdateItemsList()
+            end
+        end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        local parent = self:GetParent()
+        local startCount = tonumber(self:GetText())
+        if startCount then
+            local itemID = FarmCounter.pendingEditItemID
+            if itemID then
+                FarmCounter:SetItemStartCount(itemID, startCount)
+                FarmCounter.pendingEditItemID = nil
+
+                -- Refresh config list
+                if FarmCounterConfig and FarmCounterConfig.UpdateItemsList then
+                    FarmCounterConfig:UpdateItemsList()
+                end
+            end
+        else
+            print("|cffff0000FarmCounter:|r Invalid start count. Please enter a number.")
+        end
+        parent:Hide()
+    end,
+    EditBoxOnEscapePressed = function(self)
+        self:GetParent():Hide()
     end,
     timeout = 0,
     whileDead = true,
