@@ -23,10 +23,12 @@ local defaults = {
     focus = {
         itemID = nil,
         goal = 100,
+        mode = "session",  -- "session" (farmed since session) or "total" (total bags+bank)
         barPosition = {x = 0, y = -150},
         barVisible = true,
         barLocked = false
-    }
+    },
+    bankCache = {}  -- Cache for bank item counts
 }
 
 -- Initialize the addon
@@ -48,6 +50,12 @@ function FarmCounter:Initialize()
     end
     if not FarmCounterDB.focus then
         FarmCounterDB.focus = defaults.focus
+    end
+    if not FarmCounterDB.focus.mode then
+        FarmCounterDB.focus.mode = "session"
+    end
+    if not FarmCounterDB.bankCache then
+        FarmCounterDB.bankCache = {}
     end
 
     self.db = FarmCounterDB
@@ -167,13 +175,18 @@ function FarmCounter:AddItem(itemID)
 
     -- Add to tracking
     local currentTime = GetTime()
-    local currentCount = GetItemCount(itemID, true)
+    local totalCount = GetItemCount(itemID, true)  -- Total (bags + bank)
+    local bagsCount = GetItemCount(itemID, false)  -- Bags only
+    local bankCount = totalCount - bagsCount  -- Bank = Total - Bags
 
     self.db.trackedItems[itemID] = {
-        startCount = currentCount,
+        startCount = totalCount,
         startTime = currentTime,
         enabled = true
     }
+
+    -- Initialize bank cache for this item
+    self.db.bankCache[itemID] = bankCount
 
     print("|cff00ff00FarmCounter:|r Now tracking " .. itemLink)
 
@@ -191,6 +204,10 @@ function FarmCounter:RemoveItem(itemID)
     if self.db.trackedItems[itemID] then
         local itemName, itemLink = GetItemInfo(itemID)
         self.db.trackedItems[itemID] = nil
+
+        -- Remove from bank cache as well
+        self.db.bankCache[itemID] = nil
+
         print("|cff00ff00FarmCounter:|r Stopped tracking " .. (itemLink or "item"))
 
         -- Unfocus if this was the focused item
@@ -209,7 +226,7 @@ function FarmCounter:RemoveItem(itemID)
 end
 
 -- Focus an item (show in focus bar)
-function FarmCounter:FocusItem(itemID, goal)
+function FarmCounter:FocusItem(itemID, goal, mode)
     if not itemID then return false end
 
     -- Check if item is tracked
@@ -227,9 +244,11 @@ function FarmCounter:FocusItem(itemID, goal)
     -- Set focus
     self.db.focus.itemID = itemID
     self.db.focus.goal = goal or self.db.focus.goal or 100
+    self.db.focus.mode = mode or self.db.focus.mode or "session"
     self.db.focus.barVisible = true
 
-    print("|cff00ff00FarmCounter:|r Focused " .. itemLink .. " (Goal: " .. self.db.focus.goal .. ")")
+    local modeText = (self.db.focus.mode == "total") and "Free Farm" or "Session"
+    print("|cff00ff00FarmCounter:|r Focused " .. itemLink .. " (Goal: " .. self.db.focus.goal .. ", Mode: " .. modeText .. ")")
 
     -- Update focus bar
     if FarmCounterFocusBar and FarmCounterFocusBar.Update then
@@ -298,15 +317,33 @@ function FarmCounter:SetFocusGoal(goal)
     return true
 end
 
+-- Update bank counts for tracked items (called when bank is opened)
+function FarmCounter:UpdateBankCache()
+    for itemID, _ in pairs(self.db.trackedItems) do
+        local totalCount = GetItemCount(itemID, true)  -- Total (bags + bank)
+        local bagsCount = GetItemCount(itemID, false)  -- Bags only
+        local bankCount = totalCount - bagsCount  -- Bank = Total - Bags
+
+        self.db.bankCache[itemID] = bankCount
+    end
+
+    -- Update UI if visible
+    if FarmCounterUI and FarmCounterUI.UpdateDisplay then
+        FarmCounterUI:UpdateDisplay()
+    end
+end
+
 -- Get statistics for an item
 function FarmCounter:GetItemStats(itemID)
     local data = self.db.trackedItems[itemID]
     if not data then return nil end
 
-    local currentCount = GetItemCount(itemID, true)
+    local totalCount = GetItemCount(itemID, true)  -- Total (bags + bank)
+    local bagsCount = GetItemCount(itemID, false)  -- Bags only
+    local bankCount = self.db.bankCache[itemID] or 0  -- Use cached bank count
     local currentTime = GetTime()
 
-    local farmed = currentCount - data.startCount
+    local farmed = totalCount - data.startCount
     local elapsedSeconds = currentTime - data.startTime
     local elapsedHours = elapsedSeconds / 3600
 
@@ -316,7 +353,9 @@ function FarmCounter:GetItemStats(itemID)
     end
 
     return {
-        currentCount = currentCount,
+        currentCount = totalCount,
+        bagsCount = bagsCount,
+        bankCount = bankCount,
         farmed = farmed,
         perHour = perHour,
         elapsedSeconds = elapsedSeconds
@@ -415,6 +454,9 @@ local eventFrame = CreateFrame("Frame")
 eventFrame:RegisterEvent("ADDON_LOADED")
 eventFrame:RegisterEvent("PLAYER_LOGIN")
 eventFrame:RegisterEvent("BAG_UPDATE")
+eventFrame:RegisterEvent("PLAYERBANKSLOTS_CHANGED")
+eventFrame:RegisterEvent("BANKFRAME_OPENED")
+eventFrame:RegisterEvent("BANKFRAME_CLOSED")
 
 eventFrame:SetScript("OnEvent", function(self, event, ...)
     if event == "ADDON_LOADED" then
@@ -428,6 +470,14 @@ eventFrame:SetScript("OnEvent", function(self, event, ...)
         FarmCounter:HookBagButtons()
     elseif event == "BAG_UPDATE" then
         -- Update UI when bags change
+        if FarmCounterUI and FarmCounterUI.UpdateDisplay then
+            FarmCounterUI:UpdateDisplay()
+        end
+    elseif event == "PLAYERBANKSLOTS_CHANGED" or event == "BANKFRAME_OPENED" then
+        -- Update bank cache when bank contents change or bank is opened
+        FarmCounter:UpdateBankCache()
+    elseif event == "BANKFRAME_CLOSED" then
+        -- Update UI when bank is closed (to ensure display is current)
         if FarmCounterUI and FarmCounterUI.UpdateDisplay then
             FarmCounterUI:UpdateDisplay()
         end

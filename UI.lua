@@ -295,8 +295,12 @@ function FarmCounterUI:UpdateItemRow(row, itemID)
     local stats = FarmCounter:GetItemStats(itemID)
 
     if stats then
-        -- Current count
-        row.count:SetText("|cffffffffInventory:|r " .. stats.currentCount)
+        -- Current count (separate bags and bank)
+        local countText = "|cffffffffBags:|r " .. stats.bagsCount
+        if stats.bankCount > 0 then
+            countText = countText .. " |cffaaaaaa||r |cffffffffBank:|r " .. stats.bankCount
+        end
+        row.count:SetText(countText)
 
         -- Session stats
         local farmedColor = stats.farmed >= 0 and "|cff00ff00" or "|cffff0000"
@@ -336,15 +340,17 @@ function FarmCounterUI:UpdateItemRow(row, itemID)
         row.focusBtn.icon:SetAlpha(0.5)
         row.focusBtn.icon:SetVertexColor(1, 1, 1) -- No tint
         row.focusBtn:SetScript("OnClick", function()
-            -- Open dialog to set goal
-            FarmCounter:FocusItem(itemID)
-            StaticPopup_Show("FARMCOUNTER_SET_GOAL")
+            -- Store itemID for the dialog
+            FarmCounter.pendingFocusItemID = itemID
+            -- Open dialog to choose focus mode
+            StaticPopup_Show("FARMCOUNTER_CHOOSE_FOCUS_MODE")
         end)
         row.focusBtn:SetScript("OnEnter", function(self)
             GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
             GameTooltip:SetText("Focus Item")
-            GameTooltip:AddLine("Shows progress bar", 1, 1, 1)
-            GameTooltip:AddLine("Right-click bar to set goal", 0.7, 0.7, 0.7)
+            GameTooltip:AddLine("Session Goal: Track items farmed", 1, 1, 1)
+            GameTooltip:AddLine("Free Farm: Track total (bags+bank)", 1, 1, 1)
+            GameTooltip:AddLine("Right-click bar to change goal", 0.7, 0.7, 0.7)
             GameTooltip:Show()
         end)
         row.focusBtn:SetScript("OnLeave", function(self)
@@ -410,6 +416,141 @@ StaticPopupDialogs["FARMCOUNTER_ADD_ITEM"] = {
             FarmCounter:AddItem(itemID)
         else
             print("|cffff0000FarmCounter:|r Invalid Item ID. Please enter a number.")
+        end
+        parent:Hide()
+    end,
+    EditBoxOnEscapePressed = function(self)
+        self:GetParent():Hide()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- Static popup to choose focus mode
+StaticPopupDialogs["FARMCOUNTER_CHOOSE_FOCUS_MODE"] = {
+    text = "Choose Focus Mode:",
+    button1 = "Session Goal",
+    button2 = "Free Farm",
+    button3 = "Cancel",
+    OnAccept = function(self)
+        -- Button 1: Session mode
+        StaticPopup_Show("FARMCOUNTER_SET_SESSION_GOAL")
+    end,
+    OnCancel = function(self)
+        -- Button 2: Free Farm mode
+        StaticPopup_Show("FARMCOUNTER_SET_FREEFARM_GOAL")
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- Static popup for setting session goal
+StaticPopupDialogs["FARMCOUNTER_SET_SESSION_GOAL"] = {
+    text = "Set Session Goal (items to farm this session):",
+    button1 = "Set",
+    button2 = "Cancel",
+    hasEditBox = true,
+    OnShow = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            editBox:SetText("100")
+            editBox:SetFocus()
+            editBox:HighlightText()
+        end
+    end,
+    OnAccept = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            local goal = tonumber(editBox:GetText())
+            if goal and goal > 0 then
+                local itemID = FarmCounter.pendingFocusItemID
+                if itemID then
+                    FarmCounter:FocusItem(itemID, goal, "session")
+                    FarmCounter.pendingFocusItemID = nil
+                end
+            else
+                print("|cffff0000FarmCounter:|r Invalid goal. Please enter a positive number.")
+            end
+        end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        local parent = self:GetParent()
+        local goal = tonumber(self:GetText())
+        if goal and goal > 0 then
+            local itemID = FarmCounter.pendingFocusItemID
+            if itemID then
+                FarmCounter:FocusItem(itemID, goal, "session")
+                FarmCounter.pendingFocusItemID = nil
+            end
+        else
+            print("|cffff0000FarmCounter:|r Invalid goal. Please enter a positive number.")
+        end
+        parent:Hide()
+    end,
+    EditBoxOnEscapePressed = function(self)
+        self:GetParent():Hide()
+    end,
+    timeout = 0,
+    whileDead = true,
+    hideOnEscape = true,
+    preferredIndex = 3,
+}
+
+-- Static popup for setting free farm goal
+StaticPopupDialogs["FARMCOUNTER_SET_FREEFARM_GOAL"] = {
+    text = "Free Farm: How many total items do you want?\n(Counts bags + bank together)",
+    button1 = "Set",
+    button2 = "Cancel",
+    hasEditBox = true,
+    OnShow = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            local itemID = FarmCounter.pendingFocusItemID
+            if itemID then
+                local stats = FarmCounter:GetItemStats(itemID)
+                if stats then
+                    -- Set default to current + 100
+                    editBox:SetText(tostring(stats.currentCount + 100))
+                else
+                    editBox:SetText("100")
+                end
+            else
+                editBox:SetText("100")
+            end
+            editBox:SetFocus()
+            editBox:HighlightText()
+        end
+    end,
+    OnAccept = function(self)
+        local editBox = self.EditBox or self.editBox
+        if editBox then
+            local goal = tonumber(editBox:GetText())
+            if goal and goal > 0 then
+                local itemID = FarmCounter.pendingFocusItemID
+                if itemID then
+                    FarmCounter:FocusItem(itemID, goal, "total")
+                    FarmCounter.pendingFocusItemID = nil
+                end
+            else
+                print("|cffff0000FarmCounter:|r Invalid goal. Please enter a positive number.")
+            end
+        end
+    end,
+    EditBoxOnEnterPressed = function(self)
+        local parent = self:GetParent()
+        local goal = tonumber(self:GetText())
+        if goal and goal > 0 then
+            local itemID = FarmCounter.pendingFocusItemID
+            if itemID then
+                FarmCounter:FocusItem(itemID, goal, "total")
+                FarmCounter.pendingFocusItemID = nil
+            end
+        else
+            print("|cffff0000FarmCounter:|r Invalid goal. Please enter a positive number.")
         end
         parent:Hide()
     end,

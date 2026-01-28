@@ -181,7 +181,18 @@ function FarmCounterFocusBar:Update()
     end
 
     local goal = FarmCounter.db.focus.goal or 100
-    local current = stats.farmed
+    local mode = FarmCounter.db.focus.mode or "session"
+
+    -- Choose current value based on mode
+    local current
+    if mode == "total" then
+        -- Free Farm mode: show total bags + bank
+        current = stats.currentCount
+    else
+        -- Session mode: show farmed this session
+        current = stats.farmed
+    end
+
     local percentage = (current / goal) * 100
     percentage = math.min(percentage, 100) -- Cap at 100%
 
@@ -223,9 +234,18 @@ function FarmCounterFocusBar:Update()
     end
     self.frame.progressText:SetText(progressStr)
 
-    -- Update stats text (session farmed and per hour)
+    -- Update stats text (mode-dependent)
     local perHourText = string.format("%.1f", stats.perHour)
-    local statsStr = "|cffaaaaaa+" .. stats.farmed .. " this session (" .. perHourText .. "/h)|r"
+    local statsStr
+    if mode == "total" then
+        -- Free Farm mode: show bags and bank breakdown
+        local bagsText = "|cffffffffBags:|r " .. stats.bagsCount
+        local bankText = stats.bankCount > 0 and " |cffaaaaaa||r |cffffffffBank:|r " .. stats.bankCount or ""
+        statsStr = "|cffaaaaaa" .. bagsText .. bankText .. " (" .. perHourText .. "/h)|r"
+    else
+        -- Session mode: show farmed this session
+        statsStr = "|cffaaaaaa+" .. stats.farmed .. " this session (" .. perHourText .. "/h)|r"
+    end
     self.frame.statsText:SetText(statsStr)
 
     -- Show frame
@@ -248,7 +268,7 @@ function FarmCounterFocusBar:StartUpdateTimer()
     end)
 end
 
--- Static popup for setting goal
+-- Static popup for setting goal (right-click on bar)
 StaticPopupDialogs["FARMCOUNTER_SET_GOAL"] = {
     text = "Set Goal for Focused Item:",
     button1 = "Set",
@@ -257,6 +277,9 @@ StaticPopupDialogs["FARMCOUNTER_SET_GOAL"] = {
     OnShow = function(self)
         local editBox = self.EditBox or self.editBox
         if editBox then
+            local mode = FarmCounter.db.focus.mode or "session"
+            local modeText = (mode == "total") and " (Free Farm)" or " (Session)"
+            self.text:SetText("Set Goal for Focused Item:" .. modeText)
             editBox:SetText(tostring(FarmCounter.db.focus.goal or 100))
             editBox:SetFocus()
             editBox:HighlightText()
